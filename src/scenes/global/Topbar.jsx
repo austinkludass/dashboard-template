@@ -206,7 +206,7 @@ const Topbar = () => {
         >
           <MenuItem onClick={handleProfile}>Profile</MenuItem>
           <MenuItem onClick={handleLogout}>
-            <Typography color={colors.redAccent[400]}>Logout</Typography>
+            <Typography color="error">Logout</Typography>
           </MenuItem>
         </Menu>
         <IconButton onClick={colorMode.toggleColorMode}>

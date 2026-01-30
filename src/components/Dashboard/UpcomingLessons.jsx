@@ -336,7 +336,7 @@ const UpcomingLessons = () => {
       <Box flex={1} overflow="auto" pr={1}>
         {viewMode === "list" ? (
           lessons.length === 0 ? (
-            <Typography variant="body1" color={colors.grey[200]}>
+            <Typography variant="body1" color="text.secondary">
               No lessons in the next 3 days.
             </Typography>
           ) : (

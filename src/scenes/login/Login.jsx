@@ -108,7 +108,7 @@ const Login = ({ appName, allowSignup = false }) => {
   };
 
   // Handle user forgot password
-  const hamdleForgotPassword = async () => {
+  const handleForgotPassword = async () => {
     if (!email) {
       toast.error("Please enter your email address first");
       return;
@@ -269,7 +269,7 @@ const Login = ({ appName, allowSignup = false }) => {
                 variant="body2"
                 sx={{ mt: 1, textAlign: "right", cursor: "pointer" }}
                 color="primary"
-                onClick={hamdleForgotPassword}
+                onClick={handleForgotPassword}
               >
                 Forgot password?
               </Typography>
