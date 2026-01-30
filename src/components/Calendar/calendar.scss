@@ -1,0 +1,39 @@
+@import 'react-big-calendar/lib/sass/variables';
+
+$current-time-color: #FF0000;
+$today-highlight-bg: transparent;
+
+.rbc-day-slot .rbc-time-slot {
+    border-top: none !important;
+}
+
+.rbc-allday-cell {
+    display: none;
+}
+
+.rbc-current-time-indicator {
+    height: 2px !important;
+}
+
+.rbc-header {
+    border-bottom: none !important;
+}
+
+.rbc-time-content {
+    border-top: 1px solid #ddd !important;
+}
+
+.rbc-time-view {
+    border-radius: 8px 8px 0 0;
+    border-bottom: 0px !important;
+}
+
+.rbc-event {
+    padding: 0 !important;
+}
+
+.rbc-event-label {
+    display: none !important;
+}
+
+@import 'react-big-calendar/lib/sass/styles';
