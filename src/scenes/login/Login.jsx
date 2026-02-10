@@ -38,14 +38,15 @@ const Login = ({ appName, allowSignup = false }) => {
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   const [isSignup, setIsSignup] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(false);
+
   const { dispatch } = useContext(AuthContext);
-  
+
   const colorMode = useContext(ColorModeContext);
   const navigate = useNavigate();
   const theme = useTheme();
@@ -62,6 +63,8 @@ const Login = ({ appName, allowSignup = false }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
+      setIsLoading(true);
+
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
@@ -78,10 +81,12 @@ const Login = ({ appName, allowSignup = false }) => {
       navigate("/");
     } catch (error) {
       toast.error("Invalid email or password");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Hnadle user signup
+  // Handle user signup
   const handleSignup = async (e) => {
     e.preventDefault();
 
@@ -91,6 +96,8 @@ const Login = ({ appName, allowSignup = false }) => {
     }
 
     try {
+      setIsLoading(true);
+
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -104,6 +111,8 @@ const Login = ({ appName, allowSignup = false }) => {
       setConfirmPassword("");
     } catch (error) {
       toast.error(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -141,7 +150,10 @@ const Login = ({ appName, allowSignup = false }) => {
             alignItems: "center",
           }}
         >
-          <IconButton onClick={colorMode.toggleColorMode} sx={{ position: "absolute", top: 8, right: 8}}>
+          <IconButton
+            onClick={colorMode.toggleColorMode}
+            sx={{ position: "absolute", top: 8, right: 8 }}
+          >
             {theme.palette.mode === "dark" ? (
               <DarkModeOutlined />
             ) : (
@@ -265,19 +277,25 @@ const Login = ({ appName, allowSignup = false }) => {
               />
             )}
             {!isSignup && (
-              <Typography
-                variant="body2"
-                sx={{ mt: 1, textAlign: "right", cursor: "pointer" }}
-                color="primary"
-                onClick={handleForgotPassword}
-              >
-                Forgot password?
-              </Typography>
+              <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
+                <Typography
+                  variant="body2"
+                  color="primary"
+                  sx={{
+                    cursor: "pointer",
+                    width: "fit-content",
+                  }}
+                  onClick={handleForgotPassword}
+                >
+                  Forgot password?
+                </Typography>
+              </Box>
             )}
             <Button
               type="submit"
               fullWidth
               variant="contained"
+              loading={isLoading}
               sx={{ mt: 3, mb: 2 }}
             >
               {isSignup ? "Sign Up" : "Sign In"}
@@ -285,7 +303,7 @@ const Login = ({ appName, allowSignup = false }) => {
             {allowSignup && (
               <Typography
                 variant="body2"
-                align="Center"
+                align="center"
                 sx={{ mt: 2, cursor: "pointer" }}
                 color="primary"
                 onClick={() => {

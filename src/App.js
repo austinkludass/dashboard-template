@@ -16,7 +16,7 @@ import Login from "./scenes/login/Login";
 // Global app configuration
 const config = {
   appName: "Dashboard Template Web App",
-  canSignup: false,
+  canSignup: true,
   pages: [
     { name: "Dashboard", path: "/", page: <Dashboard /> },
     { name: "Settings", path: "/settings", page: <Settings /> },

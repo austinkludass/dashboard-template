@@ -7,6 +7,7 @@ This project contains the scaffold for a dashboard web application.
 - Clone the repository
 - Open the project in VS Code
 - Open a terminal at the project path and run `npm install`
+- Create a .env file and set key `REACT_APP_FIREBASE_KEY` to the firebase API key
 - Once the node modules have been installed, run the app with `npm start`
 
 ## Component list
