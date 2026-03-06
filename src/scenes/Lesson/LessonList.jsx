@@ -2,30 +2,50 @@ import {
   Box,
   Typography,
   Paper,
-  AccordionSummary,
-  AccordionDetails,
-  Accordion,
   Button,
   Chip,
   IconButton,
   Badge,
   Collapse,
   ButtonGroup,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  useMediaQuery,
+  useTheme,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 import { collection, where, query, getDocs } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { ToastContainer } from "react-toastify";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { FilterList } from "@mui/icons-material";
+import {
+  FilterList,
+  Add,
+  ChevronLeft,
+  ChevronRight,
+  MoreVert,
+} from "@mui/icons-material";
 import { TypeColors } from "../../utils/lessonTypeColors";
 import { DataGrid } from "@mui/x-data-grid";
 import { db } from "../../data/firebase";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FilterPanel from "../../components/Calendar/CustomComponents/FilterPanel";
+import EventDialog from "../../components/Calendar/CustomComponents/EventDialog";
 import LessonForm from "../../components/Lesson/LessonForm";
 import Header from "../../components/Global/Header";
 import dayjs from "dayjs";
+
+// Dummy Data
+import { lessons as dummyLessons } from "../../data/dummyData";
+
+const toCalendarEvent = (lesson) => ({
+  ...lesson,
+  start: new Date(lesson.startDateTime),
+  end: new Date(lesson.endDateTime),
+  title: lesson.subjectGroupName,
+});
 
 const initialState = {
   date: dayjs(),
@@ -42,9 +62,16 @@ const initialState = {
 };
 
 const LessonList = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [lessons, setLessons] = useState([]);
   const [weekStart, setWeekStart] = useState(dayjs().startOf("week"));
   const [showFilters, setShowFilters] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [menuRow, setMenuRow] = useState(null);
+  const [selectedLesson, setSelectedLesson] = useState(null);
+  const [dialogMode, setDialogMode] = useState("view");
   const [filters, setFilters] = useState({
     tutors: [],
     students: [],
@@ -57,7 +84,7 @@ const LessonList = () => {
   const activeFilterCount = useMemo(() => {
     return Object.values(filters).reduce(
       (count, value) => count + (value.length > 0 ? 1 : 0),
-      0
+      0,
     );
   }, [filters]);
 
@@ -74,20 +101,26 @@ const LessonList = () => {
     const startISO = weekStart.startOf("week").toISOString();
     const endISO = weekStart.endOf("week").toISOString();
 
-    const q = query(
-      collection(db, "lessons"),
-      where("startDateTime", ">=", startISO),
-      where("startDateTime", "<=", endISO)
+    // const q = query(
+    //   collection(db, "lessons"),
+    //   where("startDateTime", ">=", startISO),
+    //   where("startDateTime", "<=", endISO),
+    // );
+    //
+    // const snapshot = await getDocs(q);
+    // const data = snapshot.docs.map((doc) => {
+    //   const lesson = { id: doc.id, ...doc.data() };
+    //   return {
+    //     ...lesson,
+    //     date: dayjs(lesson.startDateTime).format("YYYY-MM-DD"),
+    //   };
+    // });
+
+    // Dummy Data
+    const data = dummyLessons.filter(
+      (l) => l.startDateTime >= startISO && l.startDateTime <= endISO,
     );
 
-    const snapshot = await getDocs(q);
-    const data = snapshot.docs.map((doc) => {
-      const lesson = { id: doc.id, ...doc.data() };
-      return {
-        ...lesson,
-        date: dayjs(lesson.startDateTime).format("YYYY-MM-DD"),
-      };
-    });
     setLessons(data);
   };
 
@@ -99,35 +132,58 @@ const LessonList = () => {
   const handleNextWeek = () => setWeekStart((prev) => prev.add(1, "week"));
   const handleToday = () => setWeekStart(dayjs().startOf("week"));
 
+  const handleOpenMenu = (e, row) => {
+    e.stopPropagation();
+    setMenuAnchorEl(e.currentTarget);
+    setMenuRow(row);
+  };
+
+  const handleCloseMenu = () => {
+    setMenuAnchorEl(null);
+    setMenuRow(null);
+  };
+
+  const handleMenuView = () => {
+    setDialogMode("view");
+    setSelectedLesson(toCalendarEvent(menuRow));
+    handleCloseMenu();
+  };
+
+  const handleMenuDelete = () => {
+    handleDeleteLesson(menuRow);
+    handleCloseMenu();
+  };
+
+  const handleDeleteLesson = async (event, applyToFuture = false) => {
+    setLessons((prev) => prev.filter((l) => l.id !== event.id));
+    setSelectedLesson(null);
+  };
+
   const filteredLessons = useMemo(() => {
     return lessons.filter((event) => {
       if (
         filters.tutors.length > 0 &&
         !filters.tutors.includes(event.tutorName)
-      ) {
+      )
         return false;
-      }
 
       if (
         filters.students.length > 0 &&
         !event.studentNames.some((s) => filters.students.includes(s))
-      ) {
+      )
         return false;
-      }
 
       if (
         filters.subjectGroups.length > 0 &&
         !filters.subjectGroups.includes(event.subjectGroupName)
-      ) {
+      )
         return false;
-      }
 
       if (
         filters.locations.length > 0 &&
         !filters.locations.includes(event.locationName)
-      ) {
+      )
         return false;
-      }
 
       if (filters.frequencies.length > 0) {
         const eventFrequency = event.frequency
@@ -138,14 +194,12 @@ const LessonList = () => {
           !filters.frequencies
             .map((f) => f.toLowerCase())
             .includes(eventFrequency)
-        ) {
+        )
           return false;
-        }
       }
 
-      if (filters.types.length > 0 && !filters.types.includes(event.type)) {
+      if (filters.types.length > 0 && !filters.types.includes(event.type))
         return false;
-      }
 
       return true;
     });
@@ -155,89 +209,150 @@ const LessonList = () => {
     {
       field: "date",
       headerName: "Date",
-      flex: 0.7,
-      renderCell: (params) => {
-        if (!params.value) return "";
-        return dayjs(params.value).format("DD/MM/YY");
-      },
+      minWidth: 90,
+      renderCell: (params) =>
+        params.value ? dayjs(params.value).format("DD/MM/YY") : "",
     },
     {
       field: "startDateTime",
       headerName: "Start",
-      flex: 0.7,
-      renderCell: (params) => {
-        if (!params.value) return "";
-        return dayjs(params.value).format("HH:mm A");
-      },
+      minWidth: 90,
+      renderCell: (params) =>
+        params.value ? dayjs(params.value).format("h:mm A") : "",
     },
     {
       field: "endDateTime",
       headerName: "End",
-      flex: 0.7,
-      renderCell: (params) => {
-        if (!params.value) return "";
-        return dayjs(params.value).format("HH:mm A");
-      },
+      minWidth: 90,
+      renderCell: (params) =>
+        params.value ? dayjs(params.value).format("h:mm A") : "",
     },
-    { field: "tutorName", headerName: "Tutor", flex: 1 },
-    { field: "subjectGroupName", headerName: "Subject", flex: 1 },
+    { field: "tutorName", headerName: "Tutor", minWidth: 140 },
+    { field: "subjectGroupName", headerName: "Subject", minWidth: 160 },
     {
       field: "studentNames",
       headerName: "Students",
-      flex: 2,
-      renderCell: (params) => {
-        const students = params.value || [];
-        return students.join(", ");
-      },
+      minWidth: 220,
+      renderCell: (params) => (params.value || []).join(", "),
     },
-    { field: "locationName", headerName: "Location", flex: 1 },
+    { field: "locationName", headerName: "Location", minWidth: 110 },
     {
       field: "type",
       headerName: "Type",
-      flex: 1,
-      renderCell: (params) => {
-        const type = params.value;
-        const color = TypeColors[type] || "success";
-        return <Chip label={type} color={color} size="small" />;
-      },
+      minWidth: 120,
+      renderCell: (params) => (
+        <Chip
+          label={params.value}
+          color={TypeColors[params.value] || "success"}
+          size="small"
+        />
+      ),
+    },
+    {
+      field: "actions",
+      headerName: "",
+      width: 50,
+      sortable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <IconButton size="small" onClick={(e) => handleOpenMenu(e, params.row)}>
+          <MoreVert fontSize="small" />
+        </IconButton>
+      ),
     },
   ];
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
-      <Box display="flex" m="20px">
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="space-between"
+        m="20px"
+      >
         <Header title="LESSONS" subtitle="Manage all lessons" />
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => setCreateOpen(true)}
+          sx={{ height: 40, whiteSpace: "nowrap" }}
+        >
+          Add Lesson
+        </Button>
       </Box>
 
-      <Paper sx={{ p: 3, maxWidth: 1000, minWidth: 600, m: 4 }}>
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h4">Create Lesson</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <LessonForm initialValues={initialState} />
-          </AccordionDetails>
-        </Accordion>
-      </Paper>
+      <Dialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ backgroundColor: "primary.main" }}>
+          <Typography variant="h4" component="span" color="white">
+            New Lesson
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Box pt={2}>
+            <LessonForm
+              initialValues={initialState}
+              onCreated={() => setCreateOpen(false)}
+            />
+          </Box>
+        </DialogContent>
+      </Dialog>
 
-      <Paper sx={{ p: 3, minWidth: 600, m: 4 }}>
-        <Typography variant="h5" gutterBottom>
-          Lessons
-        </Typography>
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleCloseMenu}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <MenuItem onClick={handleMenuView}>Details</MenuItem>
+        <MenuItem onClick={handleMenuDelete} sx={{ color: "error.main" }}>
+          Delete
+        </MenuItem>
+      </Menu>
 
+      {selectedLesson && (
+        <EventDialog
+          event={selectedLesson}
+          mode={dialogMode}
+          onClose={() => setSelectedLesson(null)}
+          onDelete={handleDeleteLesson}
+        />
+      )}
+
+      <Paper sx={{ p: 3, m: 2 }}>
         <Box
           display="flex"
           alignItems="center"
           justifyContent="space-between"
           mb={1}
+          gap={1}
         >
-          <ButtonGroup size="small" variant="outlined">
-            <Button onClick={handlePrevWeek}>Prev</Button>
-            <Button onClick={handleToday}>Today</Button>
-            <Button onClick={handleNextWeek}>Next</Button>
-          </ButtonGroup>
+          {isMobile ? (
+            <Box display="flex" alignItems="center" gap={0.5}>
+              <IconButton size="small" onClick={handlePrevWeek}>
+                <ChevronLeft />
+              </IconButton>
+              <Button size="small" variant="outlined" onClick={handleToday}>
+                Today
+              </Button>
+              <IconButton size="small" onClick={handleNextWeek}>
+                <ChevronRight />
+              </IconButton>
+            </Box>
+          ) : (
+            <ButtonGroup size="small" variant="outlined">
+              <Button onClick={handlePrevWeek}>Prev</Button>
+              <Button onClick={handleToday}>Today</Button>
+              <Button onClick={handleNextWeek}>Next</Button>
+            </ButtonGroup>
+          )}
 
-          <Typography variant="h4">
+          <Typography variant="h6">
             {`${weekStart.format("MMMM DD")} - ${
               weekStart.month() === weekStart.endOf("week").month()
                 ? weekStart.endOf("week").format("DD")
@@ -245,10 +360,7 @@ const LessonList = () => {
             }`}
           </Typography>
 
-          <IconButton
-            sx={{ ml: 12 }}
-            onClick={() => setShowFilters((prev) => !prev)}
-          >
+          <IconButton onClick={() => setShowFilters((prev) => !prev)}>
             <Badge
               badgeContent={activeFilterCount}
               color="primary"
@@ -267,8 +379,18 @@ const LessonList = () => {
           />
         </Collapse>
 
-        <DataGrid rows={filteredLessons} columns={columns} />
+        <DataGrid
+          rows={filteredLessons}
+          columns={columns}
+          disableRowSelectionOnClick
+          pageSizeOptions={[10, 25, 50]}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
+          }}
+          sx={{ "& .MuiDataGrid-virtualScroller": { overflowX: "auto" } }}
+        />
       </Paper>
+
       <ToastContainer position="top-right" autoClose={3000} />
     </LocalizationProvider>
   );

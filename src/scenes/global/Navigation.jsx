@@ -275,9 +275,9 @@ const SidebarContent = ({ isCollapsed, setIsCollapsed, onClose }) => {
 
   const getSelectedFromPath = (path) => {
     if (path === "/") return "Dashboard";
-    if (path === "/settings") return "Settings";
     if (path === "/calendar") return "Calendar";
     if (path === "/lessons") return "Lessons";
+    if (path === "/settings") return "Settings";
     return "Dashboard";
   };
 

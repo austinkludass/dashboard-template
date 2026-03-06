@@ -16,6 +16,8 @@ import Dashboard from "./scenes/dashboard/Dashboard";
 import Settings from "./scenes/Settings/Settings";
 import Navigation, { TopbarDesktop } from "./scenes/global/Navigation";
 import Login from "./scenes/login/Login";
+import LessonList from "./scenes/Lesson/LessonList";
+import CalendarPage from "./scenes/Lesson/CalendarPage";
 
 // Global app configuration
 const config = {
@@ -26,6 +28,18 @@ const config = {
       name: "Dashboard",
       path: "/",
       page: <Dashboard />,
+      protected: false,
+    },
+    {
+      name: "Calendar",
+      path: "/calendar",
+      page: <CalendarPage />,
+      protected: false,
+    },
+    {
+      name: "Lessons",
+      path: "/lessons",
+      page: <LessonList />,
       protected: false,
     },
     {
